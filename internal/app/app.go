@@ -43,9 +43,9 @@ func Run(cfg *config.Config) error {
 
 	r.With(handler.Authenticate).Get("/api/user/balance", balanceHandler.GetBalance)
 
-	r.Post("/api/user/balance/withdraw", notImplemented)
+	r.With(handler.Authenticate).Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
+	r.With(handler.Authenticate).Get("/api/user/withdrawals", balanceHandler.ListWithdrawalsByUser)
 
-	r.Get("/api/user/withdrawals", notImplemented)
 	LaSerr := http.ListenAndServe(cfg.RunAddress, r)
 	if LaSerr != nil {
 		return LaSerr

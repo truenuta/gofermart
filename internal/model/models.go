@@ -16,3 +16,9 @@ type Order struct {
 	Accrual    *float64
 	UploadedAt time.Time
 }
+
+type Withdrawal struct {
+	Order       string
+	Sum         float64
+	ProcessedAt time.Time
+}
