@@ -24,15 +24,27 @@ func Run(cfg *config.Config) error {
 		return fmt.Errorf("миграции отдали ошибку: %w", err)
 	}
 	repository := repository.NewUserRepository(database)
+
 	authService := service.NewAuthService(repository)
 	authHandler := handler.NewAuthHandler(authService)
+
+	ordersService := service.NewOrderService(repository)
+	ordersHandler := handler.NewOrdersHandler(ordersService)
+
+	balanceService := service.NewBalanceService(repository)
+	balanceHandler := handler.NewBalanceHandler(balanceService)
+
 	r := chi.NewRouter()
 	r.Post("/api/user/register", authHandler.Register)
 	r.Post("/api/user/login", authHandler.Login)
-	r.Post("/api/user/orders", notImplemented)
+
+	r.With(handler.Authenticate).Post("/api/user/orders", ordersHandler.OrderUpload)
+	r.With(handler.Authenticate).Get("/api/user/orders", ordersHandler.ListOrders)
+
+	r.With(handler.Authenticate).Get("/api/user/balance", balanceHandler.GetBalance)
+
 	r.Post("/api/user/balance/withdraw", notImplemented)
-	r.Get("/api/user/orders", notImplemented)
-	r.Get("/api/user/balance", notImplemented)
+
 	r.Get("/api/user/withdrawals", notImplemented)
 	LaSerr := http.ListenAndServe(cfg.RunAddress, r)
 	if LaSerr != nil {

@@ -1,5 +1,5 @@
     CREATE TABLE users (
-        id             BIGSERIAL NOT NULL,
+        id            BIGSERIAL NOT NULL,
         login         TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -13,9 +13,9 @@
   );
   CREATE INDEX orders_user_uploaded_idx ON orders (user_id, uploaded_at DESC);
   CREATE TABLE withdrawals (
-        id           BIGSERIAL PRIMARY KEY,
+        id           BIGINT NOT NULL,
         order_number TEXT NOT NULL,
-        user_id       VARCHAR(255) NOT NULL,
+        user_id      BIGSERIAL NOT NULL,
         sum          NUMERIC(12,2) NOT NULL,
         processed_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
