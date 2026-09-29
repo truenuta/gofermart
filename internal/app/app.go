@@ -52,9 +52,3 @@ func Run(cfg *config.Config) error {
 	}
 	return nil
 }
-
-// notImplemented — временная заглушка для ещё не реализованных маршрутов.
-// Отвечает статусом 501 Not Implemented.
-func notImplemented(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
