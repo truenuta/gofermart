@@ -10,7 +10,7 @@ import (
 func NewDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to establish connection: %w", err)
+		return nil, fmt.Errorf("failed to establish connection: %w", err)
 	}
 	return db, nil
 }

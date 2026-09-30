@@ -8,9 +8,9 @@ import (
 	"github.com/truenuta/gofermart/internal/model"
 )
 
-var ErrOtherUsersOrder = errors.New("Order nuber has already been created by other user")
-var ErrOrderNotFound = errors.New("Order was not found")
-var ErrAlreadyExists = errors.New("Order already exists")
+var ErrOtherUsersOrder = errors.New("order number has already been uploaded by another user")
+var ErrOrderNotFound = errors.New("order not found")
+var ErrAlreadyExists = errors.New("order already exists")
 
 func (r *UserRepository) CreateOrder(ctx context.Context, number string, userID int64) error {
 	var num string
@@ -68,8 +68,8 @@ func (r *UserRepository) ListOrdersByUser(ctx context.Context, userID int64) ([]
 }
 
 func (r *UserRepository) ListPendingOrders(ctx context.Context) ([]string, error) {
-	getOrdersSql := "SELECT number FROM orders WHERE status IN ('NEW', 'PROCESSING') ORDER BY uploaded_at"
-	rows, err := r.db.QueryContext(ctx, getOrdersSql)
+	getOrdersSQL := "SELECT number FROM orders WHERE status IN ('NEW', 'PROCESSING') ORDER BY uploaded_at"
+	rows, err := r.db.QueryContext(ctx, getOrdersSQL)
 	if err != nil {
 		return nil, err
 	}

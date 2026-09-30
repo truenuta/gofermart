@@ -29,12 +29,12 @@ func NewBalanceHandler(service BalanceService) *BalanceHandler {
 }
 
 func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
-	userId, ok := UserIDFromContext(r.Context())
+	userID, ok := UserIDFromContext(r.Context())
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	sum, withdrawals, err := h.service.GetBalance(r.Context(), userId)
+	sum, withdrawals, err := h.service.GetBalance(r.Context(), userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
