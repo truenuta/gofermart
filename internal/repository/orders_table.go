@@ -45,7 +45,6 @@ func (r *UserRepository) ListOrdersByUser(ctx context.Context, userID int64) ([]
 	rows, err := r.db.QueryContext(ctx, getIDsql, userID)
 	if err != nil {
 		return orders, err
-
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -66,4 +65,34 @@ func (r *UserRepository) ListOrdersByUser(ctx context.Context, userID int64) ([]
 	}
 	return orders, nil
 
+}
+
+func (r *UserRepository) ListPendingOrders(ctx context.Context) ([]string, error) {
+	getOrdersSql := "SELECT number FROM orders WHERE status IN ('NEW', 'PROCESSING') ORDER BY uploaded_at"
+	rows, err := r.db.QueryContext(ctx, getOrdersSql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var orders []string
+	var number string
+	for rows.Next() {
+		if err := rows.Scan(&number); err != nil {
+			return nil, err
+		}
+		orders = append(orders, number)
+	}
+	if err := rows.Err(); err != nil {
+		return orders, err
+	}
+	return orders, nil
+}
+
+func (r *UserRepository) UpdateOrderAccrual(ctx context.Context, number, status string, accrual *float64) error {
+	sqlUpdate := "UPDATE orders SET status = $1, accrual = $2 WHERE number = $3"
+	_, err := r.db.ExecContext(ctx, sqlUpdate, status, accrual, number)
+	if err != nil {
+		return err
+	}
+	return nil
 }

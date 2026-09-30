@@ -1,10 +1,13 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/truenuta/gofermart/internal/accrual"
 	"github.com/truenuta/gofermart/internal/config"
 	"github.com/truenuta/gofermart/internal/db"
 	"github.com/truenuta/gofermart/internal/handler"
@@ -24,6 +27,8 @@ func Run(cfg *config.Config) error {
 		return fmt.Errorf("миграции отдали ошибку: %w", err)
 	}
 	repository := repository.NewUserRepository(database)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	authService := service.NewAuthService(repository)
 	authHandler := handler.NewAuthHandler(authService)
@@ -45,6 +50,10 @@ func Run(cfg *config.Config) error {
 
 	r.With(handler.Authenticate).Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
 	r.With(handler.Authenticate).Get("/api/user/withdrawals", balanceHandler.ListWithdrawalsByUser)
+
+	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress)
+	worker := service.NewAccrualWorker(accrualClient, repository, time.Second)
+	go worker.Run(ctx)
 
 	LaSerr := http.ListenAndServe(cfg.RunAddress, r)
 	if LaSerr != nil {
