@@ -17,7 +17,9 @@ import (
 
 // Run регистрирует HTTP-маршруты API и запускает сервер
 func Run(cfg *config.Config) error {
-	database, err := db.NewDB(cfg.DatabaseURI)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	database, err := db.NewDB(ctx, cfg.DatabaseURI)
 	if err != nil {
 		return fmt.Errorf("подключение к БД: %w", err)
 	}
@@ -27,8 +29,6 @@ func Run(cfg *config.Config) error {
 		return fmt.Errorf("миграции отдали ошибку: %w", err)
 	}
 	repository := repository.NewUserRepository(database)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	authService := service.NewAuthService(repository)
 	authHandler := handler.NewAuthHandler(authService)
