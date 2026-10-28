@@ -18,6 +18,7 @@ type Config struct {
 	// AccrualSystemAddress — базовый адрес внешней системы расчёта начислений
 	// (флаг -r, переменная окружения ACCRUAL_SYSTEM_ADDRESS).
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
+	JWTSecret            string `env:"JWT_SECRET"`
 }
 
 // ParseFlags разбирает флаги командной строки
@@ -25,16 +26,19 @@ func ParseFlags() *Config {
 	var RunAddress string
 	var DatabaseURI string
 	var AccuralSystemAddress string
+	var JWTSecret string
 
 	flag.StringVar(&RunAddress, "a", "localhost:8080", "адрес запуска HTTP-сервера")
 	flag.StringVar(&DatabaseURI, "d", "", "адрес подключения к базе данных")
 	flag.StringVar(&AccuralSystemAddress, "r", "", "адрес системы расчёта начислений")
+	flag.StringVar(&JWTSecret, "s", "supersecretkey", "ключ для шифрования")
 	flag.Parse()
 
 	return &Config{
 		RunAddress:           RunAddress,
 		DatabaseURI:          DatabaseURI,
 		AccrualSystemAddress: AccuralSystemAddress,
+		JWTSecret:            JWTSecret,
 	}
 
 }
@@ -64,6 +68,9 @@ func NewConfig() (*Config, error) {
 	}
 	if envCnfg.AccrualSystemAddress == "" {
 		envCnfg.AccrualSystemAddress = flags.AccrualSystemAddress
+	}
+	if envCnfg.JWTSecret == "" {
+		envCnfg.JWTSecret = flags.JWTSecret
 	}
 	return envCnfg, nil
 

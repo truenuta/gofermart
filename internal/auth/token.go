@@ -10,7 +10,17 @@ import (
 const TokenExp = time.Hour * 3
 
 // secretKey - ключ подписи JWT
-const secretKey = "supersecretkey" // just for autotest and study purpose, not real key
+type TokenManager struct {
+	secretKey []byte
+	ttl       time.Duration
+}
+
+func NewTokenManager(secret string, ttl time.Duration) *TokenManager {
+	return &TokenManager{
+		secretKey: []byte(secret),
+		ttl:       ttl,
+	}
+}
 
 // Claims - полезная нагрузка JWT: стандартные поля плюс идентификатор пользователя
 type Claims struct {
@@ -19,16 +29,16 @@ type Claims struct {
 }
 
 // BuildJWTString выпускает подписанный JWT для пользователя UserID
-func BuildJWTString(UserID int64) (string, error) {
+func (tm *TokenManager) BuildJWTString(UserID int64) (string, error) {
 	token := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		Claims{
 			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(tm.ttl)),
 			},
 			UserID: UserID,
 		})
-	tokenString, err := token.SignedString([]byte(secretKey))
+	tokenString, err := token.SignedString(tm.secretKey)
 	if err != nil {
 		return "", err
 	}
@@ -37,11 +47,11 @@ func BuildJWTString(UserID int64) (string, error) {
 }
 
 // GetUserID проверяет подпись и срок действия токена и возвращает ID пользователя
-func GetUserID(tokenString string) (int64, error) {
+func (tm *TokenManager) GetUserID(tokenString string) (int64, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(secretKey), nil
+		return []byte(tm.secretKey), nil
 	})
 	if err != nil || !token.Valid {
 		return 0, err

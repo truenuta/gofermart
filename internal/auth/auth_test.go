@@ -6,15 +6,16 @@ import (
 
 func TestBuildAndParseToken(t *testing.T) {
 	var userID int64 = 42
+	tokenManager := NewTokenManager("supersecretkey", TokenExp)
 
-	token, err := BuildJWTString(userID)
+	token, err := tokenManager.BuildJWTString(userID)
 	if err != nil {
 		t.Fatalf("BuildJWTString returned error: %v", err)
 	}
 	if token == "" {
 		t.Fatal("BuildJWTString returned empty token")
 	}
-	id, err := GetUserID(token)
+	id, err := tokenManager.GetUserID(token)
 	if err != nil {
 		t.Fatalf("GetUserID returned error: %v", err)
 	}
@@ -24,7 +25,8 @@ func TestBuildAndParseToken(t *testing.T) {
 }
 
 func TestGetUserID_InvalidToken(t *testing.T) {
-	id, err := GetUserID("not.a.valid.token")
+	tokenManager := NewTokenManager("supersecretkey", TokenExp)
+	id, err := tokenManager.GetUserID("not.a.valid.token")
 	if err == nil {
 		t.Fatal("expected error for invalid token, got nil")
 	}

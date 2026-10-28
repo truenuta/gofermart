@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/truenuta/gofermart/internal/accrual"
+	"github.com/truenuta/gofermart/internal/auth"
 	"github.com/truenuta/gofermart/internal/config"
 	"github.com/truenuta/gofermart/internal/db"
 	"github.com/truenuta/gofermart/internal/handler"
@@ -29,8 +30,9 @@ func Run(cfg *config.Config) error {
 		return fmt.Errorf("миграции отдали ошибку: %w", err)
 	}
 	repository := repository.NewUserRepository(database)
+	tokenManager := auth.NewTokenManager(cfg.JWTSecret, auth.TokenExp)
 
-	authService := service.NewAuthService(repository)
+	authService := service.NewAuthService(repository, tokenManager)
 	authHandler := handler.NewAuthHandler(authService)
 
 	ordersService := service.NewOrderService(repository)
@@ -43,13 +45,13 @@ func Run(cfg *config.Config) error {
 	r.Post("/api/user/register", authHandler.Register)
 	r.Post("/api/user/login", authHandler.Login)
 
-	r.With(handler.Authenticate).Post("/api/user/orders", ordersHandler.OrderUpload)
-	r.With(handler.Authenticate).Get("/api/user/orders", ordersHandler.ListOrders)
+	r.With(handler.Authenticate(tokenManager)).Post("/api/user/orders", ordersHandler.OrderUpload)
+	r.With(handler.Authenticate(tokenManager)).Get("/api/user/orders", ordersHandler.ListOrders)
 
-	r.With(handler.Authenticate).Get("/api/user/balance", balanceHandler.GetBalance)
+	r.With(handler.Authenticate(tokenManager)).Get("/api/user/balance", balanceHandler.GetBalance)
 
-	r.With(handler.Authenticate).Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
-	r.With(handler.Authenticate).Get("/api/user/withdrawals", balanceHandler.ListWithdrawalsByUser)
+	r.With(handler.Authenticate(tokenManager)).Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
+	r.With(handler.Authenticate(tokenManager)).Get("/api/user/withdrawals", balanceHandler.ListWithdrawalsByUser)
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress)
 	worker := service.NewAccrualWorker(accrualClient, repository, time.Second)

@@ -17,13 +17,19 @@ type UserRepo interface {
 	GetUserByLogin(ctx context.Context, login string) (model.User, error)
 }
 
-type AuthService struct {
-	repo UserRepo
+type TokenManager interface {
+	BuildJWTString(userID int64) (string, error)
 }
 
-func NewAuthService(repo UserRepo) *AuthService {
+type AuthService struct {
+	repo  UserRepo
+	token TokenManager
+}
+
+func NewAuthService(repo UserRepo, token TokenManager) *AuthService {
 	return &AuthService{
-		repo: repo,
+		repo:  repo,
+		token: token,
 	}
 }
 
@@ -39,7 +45,7 @@ func (as *AuthService) Register(ctx context.Context, login, password string) (st
 	if err != nil {
 		return "", err
 	}
-	return auth.BuildJWTString(id)
+	return as.token.BuildJWTString(id)
 
 }
 
@@ -58,5 +64,5 @@ func (as *AuthService) Login(ctx context.Context, login, password string) (strin
 	if err != nil {
 		return "", ErrInvalidCredentials
 	}
-	return auth.BuildJWTString(user.ID)
+	return as.token.BuildJWTString(user.ID)
 }

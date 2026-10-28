@@ -29,7 +29,8 @@ func buildTestJWT(t *testing.T, userID int64, exp time.Time, secret string) stri
 
 func TestAuthenticate(t *testing.T) {
 	testUserID := int64(23)
-	validToken, err := auth.BuildJWTString(testUserID)
+	tokenManager := auth.NewTokenManager("supersecretkey", time.Hour)
+	validToken, err := tokenManager.BuildJWTString(testUserID)
 	if err != nil {
 		t.Errorf("failed to build valid token: %v", err)
 	}
@@ -96,7 +97,7 @@ func TestAuthenticate(t *testing.T) {
 				req.Header.Set("Authorization", test.authHeader)
 			}
 			rec := httptest.NewRecorder()
-			Authenticate(handler).ServeHTTP(rec, req)
+			Authenticate(tokenManager)(handler).ServeHTTP(rec, req)
 			if rec.Code != test.wantStatus {
 				t.Errorf("status = %d, want %d", rec.Code, test.wantStatus)
 			}
