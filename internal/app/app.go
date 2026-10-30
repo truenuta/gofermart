@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/truenuta/gofermart/internal/accrual"
 	"github.com/truenuta/gofermart/internal/auth"
 	"github.com/truenuta/gofermart/internal/config"
@@ -41,23 +40,25 @@ func Run(cfg *config.Config) error {
 	balanceService := service.NewBalanceService(repository)
 	balanceHandler := handler.NewBalanceHandler(balanceService)
 
-	r := chi.NewRouter()
-	r.Post("/api/user/register", authHandler.Register)
-	r.Post("/api/user/login", authHandler.Login)
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /api/user/register", authHandler.Register)
+	mux.HandleFunc("POST /api/user/login", authHandler.Login)
 
-	r.With(handler.Authenticate(tokenManager)).Post("/api/user/orders", ordersHandler.OrderUpload)
-	r.With(handler.Authenticate(tokenManager)).Get("/api/user/orders", ordersHandler.ListOrders)
+	authMW := handler.Authenticate(tokenManager)
 
-	r.With(handler.Authenticate(tokenManager)).Get("/api/user/balance", balanceHandler.GetBalance)
+	mux.Handle("POST /api/user/orders", authMW(http.HandlerFunc(ordersHandler.OrderUpload)))
+	mux.Handle("GET /api/user/orders", authMW(http.HandlerFunc(ordersHandler.ListOrders)))
 
-	r.With(handler.Authenticate(tokenManager)).Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
-	r.With(handler.Authenticate(tokenManager)).Get("/api/user/withdrawals", balanceHandler.ListWithdrawalsByUser)
+	mux.Handle("GET /api/user/balance", authMW(http.HandlerFunc(balanceHandler.GetBalance)))
+
+	mux.Handle("POST /api/user/balance/withdraw", authMW(http.HandlerFunc(balanceHandler.Withdraw)))
+	mux.Handle("GET /api/user/withdrawals", authMW(http.HandlerFunc(balanceHandler.ListWithdrawalsByUser)))
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress)
 	worker := service.NewAccrualWorker(accrualClient, repository, time.Second)
 	go worker.Run(ctx)
 
-	LaSerr := http.ListenAndServe(cfg.RunAddress, r)
+	LaSerr := http.ListenAndServe(cfg.RunAddress, mux)
 	if LaSerr != nil {
 		return LaSerr
 	}
