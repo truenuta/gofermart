@@ -9,9 +9,6 @@ import (
 	"github.com/truenuta/gofermart/internal/repository"
 )
 
-var ErrInvalidRequest = errors.New("invalid request")
-var ErrInvalidCredentials = errors.New("invalid credentials")
-
 type UserRepo interface {
 	CreateUser(ctx context.Context, login, passwordHash string) (int64, error)
 	GetUserByLogin(ctx context.Context, login string) (model.User, error)
@@ -43,6 +40,9 @@ func (as *AuthService) Register(ctx context.Context, login, password string) (st
 	}
 	id, err := as.repo.CreateUser(ctx, login, hash)
 	if err != nil {
+		if errors.Is(err, repository.ErrLoginTaken) {
+			return "", ErrLoginTaken
+		}
 		return "", err
 	}
 	return as.token.BuildJWTString(id)

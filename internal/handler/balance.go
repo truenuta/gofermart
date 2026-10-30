@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/truenuta/gofermart/internal/model"
-	"github.com/truenuta/gofermart/internal/repository"
 	"github.com/truenuta/gofermart/internal/service"
 )
 
@@ -71,7 +70,7 @@ func (h *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	case errors.Is(err, service.ErrInvalidOrderNumber):
 		w.WriteHeader(http.StatusUnprocessableEntity)
-	case errors.Is(err, repository.ErrNoAccrual):
+	case errors.Is(err, service.ErrInsufficientFunds):
 		w.WriteHeader(http.StatusPaymentRequired)
 	case errors.Is(err, service.ErrNegativeOrZeroSum):
 		w.WriteHeader(http.StatusUnprocessableEntity)

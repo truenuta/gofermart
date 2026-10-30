@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/truenuta/gofermart/internal/repository"
 	"github.com/truenuta/gofermart/internal/service"
 )
 
@@ -68,7 +67,7 @@ func TestRegister_InvalidRequest(t *testing.T) {
 }
 
 func TestRegister_LoginTaken(t *testing.T) {
-	h := NewAuthHandler(fakeAuth{registerErr: repository.ErrLoginTaken})
+	h := NewAuthHandler(fakeAuth{registerErr: service.ErrLoginTaken})
 	req := httptest.NewRequest(http.MethodPost, "/api/user/register", strings.NewReader(`{"login":"anya","password":"secret"}`))
 	w := httptest.NewRecorder()
 	h.Register(w, req)

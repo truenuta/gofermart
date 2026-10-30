@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/truenuta/gofermart/internal/repository"
 	"github.com/truenuta/gofermart/internal/service"
 )
 
@@ -50,7 +49,7 @@ func (au *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	case errors.Is(err, service.ErrInvalidRequest):
 		http.Error(w, "bad request", http.StatusBadRequest)
-	case errors.Is(err, repository.ErrLoginTaken):
+	case errors.Is(err, service.ErrLoginTaken):
 		http.Error(w, "login already taken", http.StatusConflict)
 	default:
 		http.Error(w, "internal error", http.StatusInternalServerError)

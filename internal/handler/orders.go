@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/truenuta/gofermart/internal/model"
-	"github.com/truenuta/gofermart/internal/repository"
 	"github.com/truenuta/gofermart/internal/service"
 )
 
@@ -51,9 +50,9 @@ func (oh *OrdersHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		w.WriteHeader(http.StatusAccepted)
-	case errors.Is(err, repository.ErrAlreadyExists):
+	case errors.Is(err, service.ErrOrderAlreadyUploaded):
 		w.WriteHeader(http.StatusOK)
-	case errors.Is(err, repository.ErrOtherUsersOrder):
+	case errors.Is(err, service.ErrOrderUploadedByOther):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Is(err, service.ErrInvalidOrderNumber):
 		w.WriteHeader(http.StatusUnprocessableEntity)

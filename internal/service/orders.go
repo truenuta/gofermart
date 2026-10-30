@@ -5,9 +5,8 @@ import (
 	"errors"
 
 	"github.com/truenuta/gofermart/internal/model"
+	"github.com/truenuta/gofermart/internal/repository"
 )
-
-var ErrInvalidOrderNumber = errors.New("invalid order number")
 
 type OrdersRepo interface {
 	CreateOrder(ctx context.Context, number string, userID int64) error
@@ -57,7 +56,12 @@ func (os *OrderService) UploadOrder(ctx context.Context, userID int64, number st
 		return ErrInvalidOrderNumber
 	}
 	err := os.repo.CreateOrder(ctx, number, userID)
-	if err != nil {
+	switch {
+	case errors.Is(err, repository.ErrAlreadyExists):
+		return ErrOrderAlreadyUploaded
+	case errors.Is(err, repository.ErrOtherUsersOrder):
+		return ErrOrderUploadedByOther
+	case err != nil:
 		return err
 	}
 	return nil

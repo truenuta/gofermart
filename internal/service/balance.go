@@ -5,10 +5,8 @@ import (
 	"errors"
 
 	"github.com/truenuta/gofermart/internal/model"
+	"github.com/truenuta/gofermart/internal/repository"
 )
-
-var ErrNegativeOrZeroSum = errors.New("cant withdrow negative or zero sum")
-var ErrNoWithdraws = errors.New("cant find any withdrows")
 
 type BalanceRepo interface {
 	SumAccrualByUser(ctx context.Context, userID int64) (float64, error)
@@ -50,6 +48,9 @@ func (bs *BalanceService) Withdraw(ctx context.Context, userID int64, order stri
 	}
 	err := bs.repo.Withdraw(ctx, userID, order, sum)
 	if err != nil {
+		if errors.Is(err, repository.ErrNoAccrual) {
+			return ErrInsufficientFunds
+		}
 		return err
 	}
 	return nil
