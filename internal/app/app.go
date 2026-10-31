@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,12 +14,11 @@ import (
 	"github.com/truenuta/gofermart/internal/handler"
 	"github.com/truenuta/gofermart/internal/repository"
 	"github.com/truenuta/gofermart/internal/service"
+	"golang.org/x/sync/errgroup"
 )
 
 // Run регистрирует HTTP-маршруты API и запускает сервер
-func Run(cfg *config.Config) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func Run(ctx context.Context, cfg *config.Config) error {
 	database, err := db.NewDB(ctx, cfg.DatabaseURI)
 	if err != nil {
 		return fmt.Errorf("подключение к БД: %w", err)
@@ -56,11 +56,37 @@ func Run(cfg *config.Config) error {
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress)
 	worker := service.NewAccrualWorker(accrualClient, repository, time.Second)
-	go worker.Run(ctx)
 
-	LaSerr := http.ListenAndServe(cfg.RunAddress, mux)
-	if LaSerr != nil {
-		return LaSerr
+	srv := &http.Server{
+		Addr:              cfg.RunAddress,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
-	return nil
+
+	g, gCtx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		err := srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		worker.Run(gCtx)
+		return nil
+	})
+
+	g.Go(func() error {
+		<-gCtx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return srv.Shutdown(shutdownCtx)
+	})
+
+	return g.Wait()
 }
