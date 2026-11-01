@@ -17,6 +17,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// accrualWorkers — сколько заказов воркер одновременно запрашивает в системе начислений
+const accrualWorkers = 5
+
 // Run регистрирует HTTP-маршруты API и запускает сервер
 func Run(ctx context.Context, cfg *config.Config) error {
 	database, err := db.NewDB(ctx, cfg.DatabaseURI)
@@ -55,7 +58,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	mux.Handle("GET /api/user/withdrawals", authMW(http.HandlerFunc(balanceHandler.ListWithdrawalsByUser)))
 
 	accrualClient := accrual.NewClient(cfg.AccrualSystemAddress)
-	worker := service.NewAccrualWorker(accrualClient, repository, time.Second)
+	worker := service.NewAccrualWorker(accrualClient, repository, time.Second, accrualWorkers)
 
 	srv := &http.Server{
 		Addr:              cfg.RunAddress,
